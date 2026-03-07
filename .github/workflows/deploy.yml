@@ -21,6 +21,7 @@ jobs:
           args: check .
           
   build:
+    needs: lint
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.tags }}
