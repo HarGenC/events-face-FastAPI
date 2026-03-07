@@ -1,0 +1,21 @@
+[project]
+name = "events-face"
+version = "0.1.0"
+description = "Events Face FastAPI service"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.135.1",
+    "ruff>=0.15.5",
+    "uvicorn>=0.41.0",
+]
+
+[project.optional-dependencies]
+lint = ["ruff"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
