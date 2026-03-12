@@ -13,11 +13,14 @@ ENV UV_NO_CACHE=1
 WORKDIR /app
 RUN chown -R appuser:appgroup /app
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock alembic.ini ./
+COPY .env /app/.env
 
 RUN uv sync --frozen
 
+COPY --chown=appuser:appgroup ./alembic ./alembic
 COPY --chown=appuser:appgroup ./app ./app
+
 
 USER appuser
 
