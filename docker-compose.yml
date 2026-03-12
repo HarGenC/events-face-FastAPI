@@ -13,12 +13,29 @@ services:
       interval: 5s
       retries: 5
 
+
+  migrate:
+      build: .
+      depends_on:
+        db:
+          condition: service_healthy
+      env_file:
+        - .env
+      environment:
+        POSTGRES_HOST: db
+        POSTGRES_PORT: ${POSTGRES_PORT}
+        POSTGRES_DB: ${POSTGRES_DATABASE_NAME}
+        POSTGRES_USER: ${POSTGRES_USERNAME}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      command: uv run alembic upgrade head
+
+
   backend:
     build: .
     restart: always
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env
     environment:
@@ -33,7 +50,7 @@ services:
       - "8000:8000"
 
     command: >
-      sh -c "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000" 
+      sh -c "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000" 
 
 volumes:
   db_data:
