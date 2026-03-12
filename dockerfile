@@ -14,7 +14,6 @@ WORKDIR /app
 RUN chown -R appuser:appgroup /app
 
 COPY pyproject.toml uv.lock alembic.ini ./
-COPY .env /app/.env
 
 RUN uv sync --frozen
 
