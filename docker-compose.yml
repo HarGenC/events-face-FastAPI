@@ -9,33 +9,17 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DATABASE_NAME} -h 0.0.0.0 -p ${POSTGRES_PORT}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DATABASE_NAME}"]
       interval: 5s
       retries: 5
-
-
-  migrate:
-      build: .
-      depends_on:
-        db:
-          condition: service_healthy
-      env_file:
-        - .env
-      environment:
-        POSTGRES_HOST: db
-        POSTGRES_PORT: ${POSTGRES_PORT}
-        POSTGRES_DB: ${POSTGRES_DATABASE_NAME}
-        POSTGRES_USER: ${POSTGRES_USERNAME}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      command: uv run alembic upgrade head
 
 
   backend:
     build: .
     restart: always
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -48,9 +32,6 @@ services:
       X_API_KEY: ${X_API_KEY}
     ports:
       - "8000:8000"
-
-    command: >
-      sh -c "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000" 
 
 volumes:
   db_data:

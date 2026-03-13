@@ -12,15 +12,19 @@ ENV UV_NO_CACHE=1
 
 WORKDIR /app
 RUN chown -R appuser:appgroup /app
-
 COPY pyproject.toml uv.lock alembic.ini ./
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+RUN chown -R appuser:appgroup /entrypoint.sh
 
 RUN uv sync --frozen
 
 COPY --chown=appuser:appgroup ./alembic ./alembic
 COPY --chown=appuser:appgroup ./app ./app
 
+RUN apt-get update && apt-get install -y postgresql-client
 
 USER appuser
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/entrypoint.sh"]
