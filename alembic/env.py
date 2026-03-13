@@ -20,7 +20,9 @@ section = config.config_ini_section
 config.set_section_option(section, "POSTGRES_HOST", settings.POSTGRES_HOST)
 config.set_section_option(section, "POSTGRES_PORT", settings.POSTGRES_PORT)
 config.set_section_option(section, "POSTGRES_USERNAME", settings.POSTGRES_USERNAME)
-config.set_section_option(section, "POSTGRES_DATABASE_NAME", settings.POSTGRES_DATABASE_NAME)
+config.set_section_option(
+    section, "POSTGRES_DATABASE_NAME", settings.POSTGRES_DATABASE_NAME
+)
 config.set_section_option(section, "POSTGRES_PASSWORD", settings.POSTGRES_PASSWORD)
 
 # Interpret the config file for Python logging.
