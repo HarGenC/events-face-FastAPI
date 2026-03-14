@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.events.schemas import CreateEvent, CreatePlace
@@ -16,11 +16,20 @@ class EventsRepository:
         return result.scalar_one_or_none()
 
     async def create(self, data: CreateEvent):
-        event = Events(**data.model_dump())
-
-        self.session.add(event)
+        stmt = (
+            insert(Events)
+            .values(**data.model_dump())
+            .on_conflict_do_nothing(index_elements=["id"])
+        )
+        await self.session.execute(stmt)
         await self.session.commit()
-        await self.session.refresh(event)
+
+        result = await self.session.execute(select(Events).where(Events.id == data.id))
+        event = result.scalar_one_or_none()
+
+        if event is None:
+            raise ValueError(f"Failed to create or retrieve event with id {data.id}")
+
         return event
 
     async def update(self, event_id: UUID, data: CreateEvent):
@@ -49,11 +58,20 @@ class PlacesRepository:
         return result.scalar_one_or_none()
 
     async def create(self, data: CreatePlace):
-        place = Place(**data.model_dump())
-
-        self.session.add(place)
+        stmt = (
+            insert(Place)
+            .values(**data.model_dump())
+            .on_conflict_do_nothing(index_elements=["id"])
+        )
+        await self.session.execute(stmt)
         await self.session.commit()
-        await self.session.refresh(place)
+
+        result = await self.session.execute(select(Place).where(Place.id == data.id))
+        place = result.scalar_one_or_none()
+
+        if place is None:
+            raise ValueError(f"Failed to create or retrieve place with id {data.id}")
+
         return place
 
     async def update(self, place_id: UUID, data: CreatePlace):
