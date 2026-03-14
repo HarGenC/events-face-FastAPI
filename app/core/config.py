@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     POSTGRES_DATABASE_NAME: str
     POSTGRES_USERNAME: str
     POSTGRES_PASSWORD: str
-    BASE_URL: str
+    HOST: str
     X_API_KEY: str
 
     @property

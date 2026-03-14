@@ -8,14 +8,14 @@ from app.modules.clients.retry_config import RetryConfig
 
 class EventsProviderClient:
     _client: httpx.AsyncClient
-    BASE_URL = settings.BASE_URL
+    HOST = settings.HOST
     x_api_key: str = settings.X_API_KEY
     events: list | None
     retry_config: RetryConfig
 
     def __init__(self):
         self._client = httpx.AsyncClient(
-            timeout=10.0, headers={"x-api-key": self.x_api_key}
+            follow_redirects=True, timeout=10.0, headers={"x-api-key": self.x_api_key}
         )
         self.retry_config = RetryConfig()
 
