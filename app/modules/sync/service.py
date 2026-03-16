@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import AsyncSessionLocal
 from app.modules.clients.events_face import EventsProviderClient
 from app.modules.clients.events_paginator import EventsPaginator
 from app.modules.events.repository import EventsRepository, PlacesRepository
@@ -21,8 +22,6 @@ class SyncService:
     ):
         self.repo = SyncRepository(session)
         self.full_sync = datetime.fromisoformat("2000-01-01")
-        self.event_service = EventService(EventsRepository(session))
-        self.place_service = PlaceService(PlacesRepository(session))
         self.external_client = EventsProviderClient()
 
     async def do_sync(self):
@@ -50,10 +49,14 @@ class SyncService:
             async for events in EventsPaginator(EventsProviderClient(), sync_time):
                 for event in events["results"]:
                     event["place_id"] = event["place"]["id"]
-                    await self.place_service.create_place(
-                        CreatePlace(**(event["place"]))
-                    )
-                    await self.event_service.create_event(CreateEvent(**event))
+                    async with AsyncSessionLocal() as session:
+                        place_service = PlaceService(PlacesRepository(session))
+                        await place_service.create_place(
+                            CreatePlace(**(event["place"]))
+                        )
+                    async with AsyncSessionLocal() as session:
+                        event_service = EventService(EventsRepository(session))
+                        await event_service.create_event(CreateEvent(**event))
                     changed_at = datetime.fromisoformat(event["changed_at"]).today()
                     if max_time < changed_at:
                         max_time = changed_at

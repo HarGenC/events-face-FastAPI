@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -26,9 +27,9 @@ async def get_events(
     return result
 
 
-@router.get("/{event_id}", response_model=EventOut, summary="Get event by ID")
+@router.get("/{event_id}", response_model=Optional[EventOut], summary="Get event by ID")
 async def get_event(event_id: UUID, session: AsyncSession = Depends(get_session)):
     event_service = EventService(EventsRepository(session))
     result = await event_service.get_event(event_id)
 
-    return EventOut.model_validate(result)
+    return result
