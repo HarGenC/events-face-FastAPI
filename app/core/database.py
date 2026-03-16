@@ -7,9 +7,7 @@ from .config import settings
 
 engine = create_async_engine(settings.DATABASE_URL_asyncpg, pool_pre_ping=True)
 
-AsyncSessionLocal = async_sessionmaker(
-    bind=engine, expire_on_commit=False
-)
+AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
 class Base(DeclarativeBase):

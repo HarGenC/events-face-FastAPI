@@ -36,22 +36,45 @@ class SyncService:
             sync_time = self.full_sync
 
         max_time = sync_time.today()
-        await self.repo.create(CreateSyncLog(id=id, last_changed_at=max_time, last_sync_time=last_sync_time, sync_status=SyncStatus.PROCESSING))
+        await self.repo.create(
+            CreateSyncLog(
+                id=id,
+                last_changed_at=max_time,
+                last_sync_time=last_sync_time,
+                sync_status=SyncStatus.PROCESSING,
+            )
+        )
 
         try:
             async for events in EventsPaginator(EventsProviderClient(), sync_time):
                 for event in events["results"]:
                     event["place_id"] = event["place"]["id"]
-                    await self.place_service.create_place(CreatePlace(**(event["place"])))
+                    await self.place_service.create_place(
+                        CreatePlace(**(event["place"]))
+                    )
                     await self.event_service.create_event(CreateEvent(**event))
                     changed_at = datetime.fromisoformat(event["changed_at"]).today()
                     if max_time < changed_at:
                         max_time = changed_at
         except Exception as e:
             logger.exception(e)
-            await self.repo.update(CreateSyncLog(id=id, last_changed_at=max_time, last_sync_time=last_sync_time, sync_status=SyncStatus.FAILED))
+            await self.repo.update(
+                CreateSyncLog(
+                    id=id,
+                    last_changed_at=max_time,
+                    last_sync_time=last_sync_time,
+                    sync_status=SyncStatus.FAILED,
+                )
+            )
             logger.warning("Synchronization failed")
             raise
 
-        await self.repo.update(CreateSyncLog(id=id, last_changed_at=max_time, last_sync_time=last_sync_time, sync_status=SyncStatus.SUCCESS))
+        await self.repo.update(
+            CreateSyncLog(
+                id=id,
+                last_changed_at=max_time,
+                last_sync_time=last_sync_time,
+                sync_status=SyncStatus.SUCCESS,
+            )
+        )
         logger.info("Synchronization completed successfully")
