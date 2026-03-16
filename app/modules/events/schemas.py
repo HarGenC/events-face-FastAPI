@@ -44,7 +44,7 @@ class EventOut(BaseEvent):
 
 
 class PageWithEventsOut(BaseModel):
-    counts: int
+    count: int
     next: str | None
     previous: str | None
     results: list[EventOut]

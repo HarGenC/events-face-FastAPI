@@ -1,7 +1,7 @@
 from datetime import datetime
 from urllib.parse import urlencode
 
-from loguru import logger
+from fastapi import HTTPException
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.config import settings
@@ -19,8 +19,7 @@ class EventService:
         event = await self.repo.get_by_id(event_id)
 
         if event is None:
-            logger.warning("Event not found")
-
+            raise HTTPException(status_code=404, detail="Event not found")
         return event
 
     async def create_event(self, data: CreateEvent):
@@ -56,7 +55,7 @@ class EventService:
             previous_page = None
 
         return PageWithEventsOut(
-            counts=count, next=next_page, previous=previous_page, results=results
+            count=count, next=next_page, previous=previous_page, results=results
         )
 
     async def _build_url(
