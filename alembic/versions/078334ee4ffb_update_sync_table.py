@@ -41,6 +41,7 @@ def upgrade() -> None:
             last_sync_time = sync_at,
             last_changed_at = sync_at,
             sync_status = 'SUCCESS'
+        WHERE last_sync_time IS NULL
     """)
 
     op.alter_column("sync_logs", "last_sync_time", nullable=False)

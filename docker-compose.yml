@@ -31,7 +31,7 @@ services:
       HOST: ${HOST}
       X_API_KEY: ${X_API_KEY}
     ports:
-      - "80:80"
+      - "8000:8000"
 
 volumes:
   db_data:
