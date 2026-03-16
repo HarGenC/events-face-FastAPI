@@ -27,13 +27,25 @@ def upgrade() -> None:
     syncstatus.create(op.get_bind(), checkfirst=True)
     op.add_column(
         "sync_logs",
-        sa.Column("last_sync_time", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("last_sync_time", sa.DateTime(timezone=True), nullable=True),
     )
     op.add_column(
         "sync_logs",
-        sa.Column("last_changed_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("last_changed_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.add_column("sync_logs", sa.Column("sync_status", syncstatus, nullable=False))
+    op.add_column("sync_logs", sa.Column("sync_status", syncstatus, nullable=True))
+
+    op.execute("""
+        UPDATE sync_logs
+        SET
+            last_sync_time = sync_at,
+            last_changed_at = sync_at,
+            sync_status = 'SUCCESS'
+    """)
+
+    op.alter_column("sync_logs", "last_sync_time", nullable=False)
+    op.alter_column("sync_logs", "last_changed_at", nullable=False)
+    op.alter_column("sync_logs", "sync_status", nullable=False)
     op.drop_column("sync_logs", "sync_at")
     # ### end Alembic commands ###
 
