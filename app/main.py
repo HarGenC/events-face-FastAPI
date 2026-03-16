@@ -22,15 +22,14 @@ logger.add(sys.stderr, colorize=True, format="{time:HH:mm:ss} | {level} | {messa
 
 
 async def sync_worker():
-    async with AsyncSessionLocal() as session:
-        service = SyncService(session)
-
-        while True:
-            try:
+    while True:
+        try:
+            async with AsyncSessionLocal() as session:
+                service = SyncService(session)
                 await service.do_sync()
-            except Exception:
-                logger.exception("Sync failed")
-            await asyncio.sleep(DAY)
+        except Exception:
+            logger.exception("Sync failed")
+        await asyncio.sleep(DAY)
 
 
 @asynccontextmanager
