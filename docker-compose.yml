@@ -28,10 +28,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DATABASE_NAME}
       POSTGRES_USER: ${POSTGRES_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      BASE_URL: ${BASE_URL}
+      HOST: ${HOST}
       X_API_KEY: ${X_API_KEY}
     ports:
-      - "8000:8000"
+      - "80:80"
 
 volumes:
   db_data:

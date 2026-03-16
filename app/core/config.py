@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     POSTGRES_USERNAME: str
     POSTGRES_PASSWORD: str
     HOST: str
+    HOSTNAME: str
+    PORT: int
     X_API_KEY: str
 
     @property

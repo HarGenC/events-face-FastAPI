@@ -1,6 +1,9 @@
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.modules.events.schemas import CreateEvent, CreatePlace
 
@@ -12,8 +15,42 @@ class EventsRepository:
         self.session = session
 
     async def get_by_id(self, event_id: UUID):
-        result = await self.session.execute(select(Events).where(Events.id == event_id))
+        stmt = (
+            select(Events)
+            .where(Events.id == event_id)
+            .options(joinedload(Events.place))
+        )
+        result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_page(
+        self, page: int, page_size: int, date_from: datetime | None = None
+    ):
+        if date_from is None:
+            results = await self.session.execute(
+                select(Events)
+                .options(selectinload(Events.place))
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        else:
+            results = await self.session.execute(
+                select(Events)
+                .where(Events.event_time > date_from)
+                .options(selectinload(Events.place))
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        return results.scalars().all()
+
+    async def get_count(self, date_from: datetime | None = None):
+        if date_from is None:
+            result = await self.session.execute(select(func.count(Events.id)))
+        else:
+            result = await self.session.execute(
+                select(func.count(Events.id)).where(Events.event_time > date_from)
+            )
+        return result.scalar_one()
 
     async def create(self, data: CreateEvent):
         stmt = (

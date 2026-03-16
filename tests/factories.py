@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.events.models import Events, Place
+from app.modules.sync.enums import SyncStatus
 from app.modules.sync.models import SyncLogs
 
 UTC = timezone.utc
@@ -72,10 +73,26 @@ async def create_event(
 
 
 async def create_sync_log(
-    session: AsyncSession, *, id: UUID = None, sync_at: datetime = datetime.now(UTC)
+    session: AsyncSession,
+    *,
+    id: UUID | None = None,
+    last_changed_at: datetime | None = None,
+    last_sync_time: datetime | None = None,
+    sync_status: SyncStatus = SyncStatus.SUCCESS,
 ) -> SyncLogs:
 
-    sync_log = SyncLogs(id=id or uuid4(), sync_at=sync_at)
+    if id is None:
+        id = uuid4()
+    if last_changed_at is None:
+        last_changed_at = datetime.now(UTC)
+    if last_sync_time is None:
+        last_sync_time = datetime.now(UTC)
+    sync_log = SyncLogs(
+        id=id,
+        last_changed_at=last_changed_at,
+        last_sync_time=last_sync_time,
+        sync_status=sync_status,
+    )
 
     session.add(sync_log)
     await session.flush()
