@@ -36,7 +36,7 @@ async def session(engine) -> AsyncGenerator[AsyncSession, None]:
         await session.rollback()
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture()
 async def clean_tables(session):
     await session.execute(delete(Events))
     await session.execute(delete(SyncLogs))

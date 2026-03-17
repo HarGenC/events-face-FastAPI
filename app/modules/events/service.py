@@ -81,7 +81,7 @@ class EventService:
         if event_id in self.seats_cache:
             return self.seats_cache[event_id]
         event_provider_client = EventsProviderClient()
-        available_seats = await event_provider_client.get_seats(event_id)
+        available_seats = sorted(await event_provider_client.get_seats(event_id))
         self.seats_cache[event_id] = available_seats
         return available_seats
 

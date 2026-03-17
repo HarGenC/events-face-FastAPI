@@ -7,6 +7,8 @@ from app.modules.events.repository import PlacesRepository
 from app.modules.events.schemas import CreatePlace
 from tests.factories import create_place
 
+pytestmark = pytest.mark.usefixtures("clean_tables")
+
 
 class TestPlaceCreate:
     @pytest.mark.asyncio

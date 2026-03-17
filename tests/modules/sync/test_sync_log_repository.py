@@ -11,24 +11,27 @@ from tests.factories import create_sync_log
 
 UTC = timezone.utc
 
+pytestmark = pytest.mark.usefixtures("clean_tables")
 
-@pytest.mark.asyncio
-async def test_create_sync_log(session: AsyncSession):
-    repo = SyncRepository(session)
 
-    sync_log_data = CreateSyncLog(
-        id="650e8400-e29b-41d4-a716-446655440001",
-        last_changed_at=datetime.now(UTC),
-        last_sync_time=datetime.now(UTC),
-        sync_status=SyncStatus.SUCCESS,
-    )
+class TestSyncLogCreate:
+    @pytest.mark.asyncio
+    async def test_create_sync_log(self, session: AsyncSession):
+        repo = SyncRepository(session)
 
-    sync_log = await repo.create(sync_log_data)
+        sync_log_data = CreateSyncLog(
+            id="650e8400-e29b-41d4-a716-446655440001",
+            last_changed_at=datetime.now(UTC),
+            last_sync_time=datetime.now(UTC),
+            sync_status=SyncStatus.SUCCESS,
+        )
 
-    assert sync_log.id == sync_log_data.id
-    assert sync_log.last_changed_at == sync_log_data.last_changed_at
-    assert sync_log.last_sync_time == sync_log_data.last_sync_time
-    assert sync_log.sync_status == sync_log_data.sync_status
+        sync_log = await repo.create(sync_log_data)
+
+        assert sync_log.id == sync_log_data.id
+        assert sync_log.last_changed_at == sync_log_data.last_changed_at
+        assert sync_log.last_sync_time == sync_log_data.last_sync_time
+        assert sync_log.sync_status == sync_log_data.sync_status
 
 
 class TestSyncLogGet:
@@ -82,3 +85,35 @@ class TestSyncLogGet:
         got_sync_log = await repo.get_last_sync()
 
         assert got_sync_log is None
+
+
+class TestSyncLogUpdate:
+    @pytest.mark.asyncio
+    async def test_update_sync_log(self, session: AsyncSession):
+        repo = SyncRepository(session)
+        id = uuid4()
+        last_changed_at = datetime.now(UTC)
+        last_sync_time = datetime.now(UTC)
+
+        await create_sync_log(
+            session,
+            id=id,
+            last_changed_at=last_changed_at,
+            last_sync_time=last_sync_time,
+            sync_status=SyncStatus.PROCESSING,
+        )
+        one_day_later = last_changed_at + timedelta(days=1)
+
+        got_sync_log = await repo.update(
+            CreateSyncLog(
+                id=id,
+                last_changed_at=one_day_later,
+                last_sync_time=last_sync_time,
+                sync_status=SyncStatus.SUCCESS,
+            )
+        )
+
+        assert got_sync_log.id == id
+        assert got_sync_log.last_changed_at == one_day_later
+        assert got_sync_log.last_sync_time == last_sync_time
+        assert got_sync_log.sync_status == SyncStatus.SUCCESS

@@ -8,14 +8,15 @@ from app.modules.clients.async_retry import AsyncRetry
 
 
 class EventsProviderClient:
-    HOST = settings.HOST
-    x_api_key: str = settings.X_API_KEY
     events: list | None
 
     def __init__(self, async_retry: AsyncRetry | None = None):
+
+        self.x_api_key = settings.X_API_KEY
         self._client = httpx.AsyncClient(
             follow_redirects=True, timeout=10.0, headers={"x-api-key": self.x_api_key}
         )
+        self.HOST = settings.HOST
         if async_retry is not None:
             self.async_retry = async_retry
         else:
