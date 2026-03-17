@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class BasePlace(BaseModel):
@@ -53,3 +53,15 @@ class PageWithEventsOut(BaseModel):
 class SeatsOut(BaseModel):
     event_id: UUID
     available_seats: list[str]
+
+
+class RegistrationInfoIn(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    seat: str
+
+
+class CreateRegistration(RegistrationInfoIn):
+    event_id: UUID
+    ticket_id: UUID
