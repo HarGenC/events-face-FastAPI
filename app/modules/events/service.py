@@ -1,16 +1,19 @@
 from datetime import datetime
 from urllib.parse import urlencode
 
+from cachetools import TTLCache
 from fastapi import HTTPException
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.config import settings
+from app.modules.clients.events_face import EventsProviderClient
 from app.modules.events.repository import EventsRepository, PlacesRepository
 from app.modules.events.schemas import CreateEvent, CreatePlace, PageWithEventsOut
 
 
 class EventService:
-    def __init__(self, repo: EventsRepository):
+    def __init__(self, repo: EventsRepository, seats_cache: TTLCache | None = None):
+        self.seats_cache = seats_cache
         self.repo = repo
         self.DEFAULT_PAGE = 1
         self.DEFAULT_PAGE_SIZE = 20
@@ -71,6 +74,21 @@ class EventService:
 
         query = urlencode(params)
         return f"http://{settings.HOSTNAME}:{settings.PORT}/api/events?{query}"
+
+    async def get_available_seats(self, event_id: UUID):
+        if self.seats_cache is None:
+            raise ValueError("Seats cache is not configured")
+        if event_id in self.seats_cache:
+            return self.seats_cache[event_id]
+        event_provider_client = EventsProviderClient()
+        available_seats = await event_provider_client.get_seats(event_id)
+        self.seats_cache[event_id] = available_seats
+        return available_seats
+
+    async def check_event_status(self, event_id: UUID):
+        event = await self.get_event(event_id)
+        if event.status != "published":
+            raise HTTPException(status_code=400, detail="Event is not published")
 
 
 class PlaceService:

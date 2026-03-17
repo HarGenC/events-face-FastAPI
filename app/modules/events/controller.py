@@ -3,11 +3,9 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_session
-from app.modules.events.repository import EventsRepository
-from app.modules.events.schemas import EventOut
+from app.modules.events.dependencies import get_event_service
+from app.modules.events.schemas import EventOut, SeatsOut
 from app.modules.events.service import EventService
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -18,9 +16,8 @@ async def get_events(
     date_from: datetime = None,
     page: int = 1,
     page_size: int = 20,
-    session: AsyncSession = Depends(get_session),
+    event_service: EventService = Depends(get_event_service),
 ):
-    event_service = EventService(EventsRepository(session))
     result = await event_service.get_page_with_events(
         page=page, page_size=page_size, date_from=date_from
     )
@@ -28,8 +25,19 @@ async def get_events(
 
 
 @router.get("/{event_id}", response_model=Optional[EventOut], summary="Get event by ID")
-async def get_event(event_id: UUID, session: AsyncSession = Depends(get_session)):
-    event_service = EventService(EventsRepository(session))
+async def get_event_detail(
+    event_id: UUID, event_service: EventService = Depends(get_event_service)
+):
     result = await event_service.get_event(event_id)
 
     return result
+
+
+@router.get("/{event_id}/seats", response_model=SeatsOut)
+async def get_seats(
+    event_id: UUID, event_service: EventService = Depends(get_event_service)
+):
+    await event_service.check_event_status(event_id)
+    result = await event_service.get_available_seats(event_id)
+
+    return SeatsOut(event_id=event_id, available_seats=result)

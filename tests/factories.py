@@ -13,7 +13,7 @@ UTC = timezone.utc
 async def create_place(
     session: AsyncSession,
     *,
-    id: UUID = None,
+    id: UUID | None = None,
     name: str = "Конференц-зал Технопарк",
     city: str = "Москва",
     address: str = "ул. Ленина, д. 1",
@@ -40,7 +40,7 @@ async def create_place(
 async def create_event(
     session: AsyncSession,
     *,
-    id: UUID = None,
+    id: UUID | None = None,
     name: str = "Конференция по Python",
     place_id: UUID,
     event_time: datetime = datetime.fromisoformat("2025-01-03T03:00:00+03:00"),

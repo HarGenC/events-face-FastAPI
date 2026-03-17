@@ -9,27 +9,12 @@ from loguru import logger
 
 from app.api.endpoints import router
 from app.core import handlers
-from app.core.database import AsyncSessionLocal
-from app.modules.sync.service import SyncService
-
-DAY = 60 * 60 * 24
-
+from app.workers.sync_worker import sync_worker
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 logger.remove()
 logger.add(sys.stderr, colorize=True, format="{time:HH:mm:ss} | {level} | {message}")
-
-
-async def sync_worker():
-    while True:
-        try:
-            async with AsyncSessionLocal() as session:
-                service = SyncService(session)
-                await service.do_sync()
-        except Exception:
-            logger.exception("Sync failed")
-        await asyncio.sleep(DAY)
 
 
 @asynccontextmanager

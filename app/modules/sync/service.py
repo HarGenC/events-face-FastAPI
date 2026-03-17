@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.clients.events_face import EventsProviderClient
 from app.modules.clients.events_paginator import EventsPaginator
-from app.modules.events.repository import EventsRepository, PlacesRepository
 from app.modules.events.schemas import CreateEvent, CreatePlace
 from app.modules.events.service import EventService, PlaceService
 from app.modules.sync.enums import SyncStatus
@@ -18,11 +17,13 @@ class SyncService:
     def __init__(
         self,
         session: AsyncSession,
+        event_service: EventService,
+        place_service: PlaceService,
     ):
         self.repo = SyncRepository(session)
         self.full_sync = datetime.fromisoformat("2000-01-01")
-        self.event_service = EventService(EventsRepository(session))
-        self.place_service = PlaceService(PlacesRepository(session))
+        self.event_service = event_service
+        self.place_service = place_service
 
     async def do_sync(self):
         logger.info("Starting synchronization process")

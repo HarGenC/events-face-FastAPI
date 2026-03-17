@@ -9,12 +9,12 @@ class EventsPaginator:
         self.date = date.strftime("%Y-%m-%d")
 
     async def __aiter__(self):
-        response = await self.client.get_event(
+        response = await self.client.get_url(
             f"http://{self.client.HOST}/api/events/?changed_at={self.date}"
         )
         yield response
         while True:
             if response["next"] is None:
                 break
-            response = await self.client.get_event(response["next"])
+            response = await self.client.get_url(response["next"])
             yield response

@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 
 import httpx
 
@@ -19,7 +20,8 @@ class EventsProviderClient:
         )
         self.retry_config = RetryConfig()
 
-    async def get_event(self, url: str) -> json:
+    async def get_url(self, url: str) -> json:
+
         last_error = None
 
         for _ in range(
@@ -46,3 +48,8 @@ class EventsProviderClient:
         raise ValueError(
             f"Couldn't get {url} after {self.retry_config.max_retries} attempts"
         ) from last_error
+
+    async def get_seats(self, event_id: UUID):
+        url = f"http://{self.HOST}/api/events/{event_id}/seats"
+        result = await self.get_url(url)
+        return result["seats"]
