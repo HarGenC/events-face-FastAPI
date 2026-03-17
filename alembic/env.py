@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.database import Base
 from app.modules.events import models as events_models  # noqa: F401
 from app.modules.sync import models as sync_models  # noqa: F401
+from app.modules.tickets import models as tickets_models  # noqa: F401
 
 sys.path.append(os.path.join(sys.path[0], "app"))
 

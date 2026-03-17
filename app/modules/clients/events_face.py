@@ -5,7 +5,7 @@ import httpx
 
 from app.core.config import settings
 from app.modules.clients.async_retry import AsyncRetry
-from app.modules.events.schemas import RegistrationInfoIn
+from app.modules.tickets.schemas import RegistrationInfoIn
 
 
 class AsyncEventsProviderClient:
@@ -66,7 +66,8 @@ class EventsProviderClient:
 
         return await self.async_retry.execute(request)
 
-    async def register(self, event_id: UUID, registration_info: RegistrationInfoIn):
-        url = f"{self.HOST}/api/events/{event_id}/register/"
+    async def register(self, registration_info: RegistrationInfoIn):
+        url = f"{self.HOST}/api/events/{registration_info.event_id}/register/"
         json_data = registration_info.model_dump()
+        json_data.pop("event_id", None)
         return await self.post_url(url, json_data=json_data)

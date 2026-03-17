@@ -7,9 +7,7 @@ from app.modules.events.service import EventService, PlaceService
 from app.modules.sync.service import SyncService
 
 
-async def get_sync_service(
-    session: AsyncSession = Depends(get_session),
-):
+async def get_sync_service(session: AsyncSession = Depends(get_session)):
     event_service = EventService(EventsRepository(session))
     place_service = PlaceService(PlacesRepository(session))
     return SyncService(session, event_service, place_service)
