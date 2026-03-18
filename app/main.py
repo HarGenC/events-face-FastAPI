@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="events-face", lifespan=lifespan)
 
+
 app.add_exception_handler(RequestValidationError, handlers.validation_exception_handler)
 app.add_exception_handler(HTTPException, handlers.http_exception_handler)
 app.add_exception_handler(Exception, handlers.global_exception_handler)

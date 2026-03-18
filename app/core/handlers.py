@@ -1,4 +1,5 @@
 import traceback
+from http import HTTPStatus
 
 from fastapi import HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -27,7 +28,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         "Request validation failed"
     )
 
-    return JSONResponse(status_code=422, content={"detail": errors})
+    return JSONResponse(status_code=HTTPStatus.BAD_REQUEST, content={"detail": errors})
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
