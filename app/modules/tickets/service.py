@@ -1,9 +1,13 @@
 from datetime import datetime
+from uuid import UUID
 
 from fastapi import HTTPException
 from loguru import logger
 
-from app.modules.clients.events_face import EventsProviderClient
+from app.modules.clients.events_face import (
+    AsyncEventsProviderClient,
+    EventsProviderClient,
+)
 from app.modules.events.service import EventService
 from app.modules.tickets.repository import TicketRepository
 from app.modules.tickets.schemas import CreateRegistration, RegistrationInfoIn
@@ -74,5 +78,20 @@ class TicketService:
 
         return False
 
-    async def create_registration(self, data: CreateRegistration):
-        await self.repo.create_registration(data)
+    async def cancel_registration(self, ticket_id: UUID):
+        event_provider_client = AsyncEventsProviderClient()
+        registration = await self.repo.get_registration(ticket_id)
+        if registration is None:
+            raise HTTPException(status_code=404, detail="Registration not found")
+        event = await self.event_service.get_event(registration.event_id)
+        if event.event_time < datetime.now(event.event_time.tzinfo):
+            raise HTTPException(
+                status_code=400, detail="The cancellation deadline has expired"
+            )
+
+        (
+            await event_provider_client.cancel_registration(
+                registration.event_id, ticket_id
+            ),
+        )
+        await self.repo.delete_registration(registration.event_id, ticket_id)

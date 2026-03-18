@@ -38,10 +38,22 @@ class AsyncEventsProviderClient:
 
         return await self.async_retry.execute(request)
 
+    async def delete_url(self, url: str, json_data: dict | None = None) -> json:
+        async def request():
+            response = await self._client.request("DELETE", url, json=json_data)
+            response.raise_for_status()
+            return response.json()
+
+        return await self.async_retry.execute(request)
+
     async def get_seats(self, event_id: UUID):
         url = f"{self.HOST}/api/events/{event_id}/seats"
         result = await self.get_url(url)
         return result["seats"]
+
+    async def cancel_registration(self, event_id: UUID, ticket_id: UUID):
+        url = f"{self.HOST}/api/events/{event_id}/unregister"
+        return await self.delete_url(url, {"ticket_id": str(ticket_id)})
 
 
 class EventsProviderClient:
@@ -50,7 +62,7 @@ class EventsProviderClient:
     def __init__(self, async_retry: AsyncRetry | None = None):
         self.x_api_key = settings.X_API_KEY
         self._client = httpx.Client(
-            follow_redirects=True, timeout=10.0, headers={"x-api-key": self.x_api_key}
+            follow_redirects=True, timeout=30.0, headers={"x-api-key": self.x_api_key}
         )
         self.HOST = settings.HOST
         if async_retry is not None:
