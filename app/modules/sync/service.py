@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import AsyncSessionLocal
 from app.modules.clients.events_face import AsyncEventsProviderClient
 from app.modules.clients.events_paginator import EventsPaginator
 from app.modules.events.schemas import CreateEvent, CreatePlace
@@ -48,34 +49,39 @@ class SyncService:
 
         try:
             async for events in EventsPaginator(AsyncEventsProviderClient(), sync_time):
-                for event in events["results"]:
-                    event["place_id"] = event["place"]["id"]
-                    await self.place_service.create_place(
-                        CreatePlace(**(event["place"]))
-                    )
-                    await self.event_service.create_event(CreateEvent(**event))
-                    changed_at = datetime.fromisoformat(event["changed_at"]).today()
-                    if max_time < changed_at:
-                        max_time = changed_at
+                async with AsyncSessionLocal() as session:
+                    self.repo.session = session
+                    for event in events["results"]:
+                        event["place_id"] = event["place"]["id"]
+                        await self.place_service.create_place(
+                            CreatePlace(**(event["place"]))
+                        )
+                        await self.event_service.create_event(CreateEvent(**event))
+                        changed_at = datetime.fromisoformat(event["changed_at"]).today()
+                        if max_time < changed_at:
+                            max_time = changed_at
         except Exception as e:
             logger.exception(e)
+            async with AsyncSessionLocal() as session:
+                self.repo.session = session
+                await self.repo.update(
+                    CreateSyncLog(
+                        id=id,
+                        last_changed_at=max_time,
+                        last_sync_time=last_sync_time,
+                        sync_status=SyncStatus.FAILED,
+                    )
+                )
+            logger.warning("Synchronization failed")
+            raise
+        async with AsyncSessionLocal() as session:
+            self.repo.session = session
             await self.repo.update(
                 CreateSyncLog(
                     id=id,
                     last_changed_at=max_time,
                     last_sync_time=last_sync_time,
-                    sync_status=SyncStatus.FAILED,
+                    sync_status=SyncStatus.SUCCESS,
                 )
             )
-            logger.warning("Synchronization failed")
-            raise
-
-        await self.repo.update(
-            CreateSyncLog(
-                id=id,
-                last_changed_at=max_time,
-                last_sync_time=last_sync_time,
-                sync_status=SyncStatus.SUCCESS,
-            )
-        )
         logger.info("Synchronization completed successfully")
