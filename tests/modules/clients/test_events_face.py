@@ -6,10 +6,7 @@ import pytest
 
 from app.core.config import settings
 from app.modules.clients.async_retry import AsyncRetry
-from app.modules.clients.events_face import (
-    AsyncEventsProviderClient,
-    EventsProviderClient,
-)
+from app.modules.clients.events_face import EventsProviderClient
 
 
 class TestAsyncEventsFaceClient:
@@ -39,7 +36,7 @@ class TestAsyncEventsFaceClient:
         with patch(
             "app.modules.clients.events_face.AsyncRetry.execute", async_mock_execute
         ):
-            client = AsyncEventsProviderClient()
+            client = EventsProviderClient()
             seats = await client.get_seats(fake_event_id)
 
         assert seats == expected_response["seats"]
@@ -51,7 +48,7 @@ class TestAsyncEventsFaceClient:
         expected_response = {"next": None, "previous": None, "results": []}
 
         with patch(
-            "app.modules.clients.events_face.httpx.AsyncClient.get",
+            "app.modules.clients.events_face.httpx.AsyncClient.request",
             new_callable=AsyncMock,
         ) as mock_get:
             mock_response = Mock()
@@ -60,8 +57,8 @@ class TestAsyncEventsFaceClient:
 
             mock_get.return_value = mock_response
 
-            client = AsyncEventsProviderClient()
-            result = await client.get_url(url)
+            client = EventsProviderClient()
+            result = await client.request_url("GET", url)
 
         assert result == expected_response
 
@@ -82,32 +79,11 @@ class TestAsyncEventsFaceClient:
 
         mock_get.side_effect = [error, error, success_response]
 
-        with patch("app.modules.clients.events_face.httpx.AsyncClient.get", mock_get):
-            client = AsyncEventsProviderClient(async_retry=AsyncRetry(max_retries=3))
-            result = await client.get_url(url)
+        with patch(
+            "app.modules.clients.events_face.httpx.AsyncClient.request", mock_get
+        ):
+            client = EventsProviderClient(async_retry=AsyncRetry(max_retries=3))
+            result = await client.request_url("GET", url)
 
         assert result == expected_response
         assert mock_get.call_count == 3
-
-
-class TestEventsFaceClient:
-    @pytest.mark.asyncio
-    async def test_post_url(self):
-        url = f"{settings.HOST}/api/events/register"
-        json_data = {"event_id": str(uuid4()), "seat": "A1"}
-        expected_response = {"ticket_id": str(uuid4())}
-
-        with patch(
-            "app.modules.clients.events_face.httpx.Client.post",
-            new_callable=Mock,
-        ) as mock_post:
-            mock_response = Mock()
-            mock_response.json.return_value = expected_response
-            mock_response.raise_for_status.return_value = 200
-
-            mock_post.return_value = mock_response
-
-            client = EventsProviderClient()
-            result = await client.post_url(url, json_data)
-
-        assert result == expected_response

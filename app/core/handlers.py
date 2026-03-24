@@ -21,7 +21,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    # собираем ошибки Pydantic в читаемом виде
     errors = exc.errors()
 
     logger.bind(path=request.url.path, method=request.method, errors=errors).warning(

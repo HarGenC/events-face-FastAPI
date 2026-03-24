@@ -1,14 +1,14 @@
-import json
 from uuid import UUID
 
 import httpx
+from loguru import logger
 
 from app.core.config import settings
 from app.modules.clients.async_retry import AsyncRetry
 from app.modules.tickets.schemas import RegistrationInfoIn
 
 
-class AsyncEventsProviderClient:
+class EventsProviderClient:
     events: list | None
 
     def __init__(self, async_retry: AsyncRetry | None = None):
@@ -22,64 +22,36 @@ class AsyncEventsProviderClient:
         else:
             self.async_retry = AsyncRetry()
 
-    async def get_url(self, url: str) -> json:
+    async def request_url(self, method: str, url: str, json_data: dict | None = None):
         async def request():
-            response = await self._client.get(url)
+            response = await self._client.request(method, url, json=json_data)
             response.raise_for_status()
             return response.json()
 
-        return await self.async_retry.execute(request)
+        try:
+            return await self.async_retry.execute(request)
+        except httpx.ReadTimeout:
+            logger.error(f"Timeout while requesting {url}")
+            raise
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error while requesting {method} {url}: {e}")
+            raise
 
-    async def post_url(self, url: str, json_data: dict | None = None) -> json:
-        async def request():
-            response = await self._client.post(url, json=json_data)
-            response.raise_for_status()
-            return response.json()
-
-        return await self.async_retry.execute(request)
-
-    async def delete_url(self, url: str, json_data: dict | None = None) -> json:
-        async def request():
-            response = await self._client.request("DELETE", url, json=json_data)
-            response.raise_for_status()
-            return response.json()
-
-        return await self.async_retry.execute(request)
+        except Exception as e:
+            logger.error(f"Unexpected error while requesting {method} {url}: {e}")
+            raise
 
     async def get_seats(self, event_id: UUID):
         url = f"{self.HOST}/api/events/{event_id}/seats"
-        result = await self.get_url(url)
+        result = await self.request_url("GET", url)
         return result["seats"]
 
     async def cancel_registration(self, event_id: UUID, ticket_id: UUID):
         url = f"{self.HOST}/api/events/{event_id}/unregister"
-        return await self.delete_url(url, {"ticket_id": str(ticket_id)})
-
-
-class EventsProviderClient:
-    events: list | None
-
-    def __init__(self, async_retry: AsyncRetry | None = None):
-        self.x_api_key = settings.X_API_KEY
-        self._client = httpx.Client(
-            follow_redirects=True, timeout=30.0, headers={"x-api-key": self.x_api_key}
-        )
-        self.HOST = settings.HOST
-        if async_retry is not None:
-            self.async_retry = async_retry
-        else:
-            self.async_retry = AsyncRetry()
-
-    async def post_url(self, url: str, json_data: dict | None = None) -> json:
-        async def request():
-            response = self._client.post(url, json=json_data)
-            response.raise_for_status()
-            return response.json()
-
-        return await self.async_retry.execute(request)
+        return await self.request_url("DELETE", url, {"ticket_id": str(ticket_id)})
 
     async def register(self, registration_info: RegistrationInfoIn):
         url = f"{self.HOST}/api/events/{registration_info.event_id}/register/"
         json_data = registration_info.model_dump()
         json_data.pop("event_id", None)
-        return await self.post_url(url, json_data=json_data)
+        return await self.request_url("POST", url, json_data=json_data)

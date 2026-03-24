@@ -5,7 +5,7 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
-from app.modules.clients.events_face import AsyncEventsProviderClient
+from app.modules.clients.events_face import EventsProviderClient
 from app.modules.clients.events_paginator import EventsPaginator
 from app.modules.events.schemas import CreateEvent, CreatePlace
 from app.modules.events.service import EventService, PlaceService
@@ -48,7 +48,7 @@ class SyncService:
         )
 
         try:
-            async for events in EventsPaginator(AsyncEventsProviderClient(), sync_time):
+            async for events in EventsPaginator(EventsProviderClient(), sync_time):
                 async with AsyncSessionLocal() as session:
                     self.repo.session = session
                     for event in events["results"]:

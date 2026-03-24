@@ -5,8 +5,8 @@ from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
-from .models import Events, Place
-from .schemas import CreateEvent, CreatePlace
+from app.modules.events.models import Events, Place
+from app.modules.events.schemas import CreateEvent, CreatePlace
 
 
 class EventsRepository:

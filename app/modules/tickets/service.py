@@ -1,25 +1,32 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from loguru import logger
 
-from app.modules.clients.events_face import (
-    AsyncEventsProviderClient,
-    EventsProviderClient,
-)
+from app.modules.clients.events_face import EventsProviderClient
 from app.modules.events.service import EventService
+from app.modules.notifications.enums import NotificationStatus
+from app.modules.notifications.schemas import CreateNotification
+from app.modules.notifications.service import NotificationService
 from app.modules.tickets.repository import TicketRepository
 from app.modules.tickets.schemas import CreateRegistration, RegistrationInfoIn
 
 
 class TicketService:
-    def __init__(self, repo: TicketRepository, event_service: EventService):
+    def __init__(
+        self,
+        repo: TicketRepository,
+        event_service: EventService,
+        event_provider_client: EventsProviderClient,
+        notification_service: NotificationService,
+    ):
         self.repo = repo
+        self.notification_service = notification_service
         self.event_service = event_service
+        self.event_provider_client = event_provider_client
 
     async def register_for_event(self, registration_info: RegistrationInfoIn):
-        event_provider_client = EventsProviderClient()
         event = await self.event_service.get_event(registration_info.event_id)
         if event.registration_deadline < datetime.now(
             event.registration_deadline.tzinfo
@@ -41,7 +48,7 @@ class TicketService:
         if registration_info.seat not in available_seats:
             raise HTTPException(status_code=400, detail="Seat is not available")
 
-        result = await event_provider_client.register(registration_info)
+        result = await self.event_provider_client.register(registration_info)
         ticket_id = result["ticket_id"]
         logger.info(
             f"Registered for event {registration_info.event_id} with ticket {ticket_id}"
@@ -57,6 +64,20 @@ class TicketService:
                 email=registration_info.email,
             )
         )
+        payload = {
+            "message": f"Вы успешно зарегестрированы на мероприятие - {event.name}",
+            "reference_id": str(ticket_id),
+            "idempotency_key": str(uuid4()),
+        }
+        await self.notification_service.create_notification(
+            CreateNotification(
+                event_type="notification",
+                payload=payload,
+                status=NotificationStatus.PENDING,
+            )
+        )
+        await self.repo.session.commit()
+
         return ticket_id
 
     async def _seat_exists(self, seat: str, seats_pattern: str) -> bool:
@@ -79,7 +100,6 @@ class TicketService:
         return False
 
     async def cancel_registration(self, ticket_id: UUID):
-        event_provider_client = AsyncEventsProviderClient()
         registration = await self.repo.get_registration(ticket_id)
         if registration is None:
             raise HTTPException(status_code=404, detail="Registration not found")
@@ -90,7 +110,7 @@ class TicketService:
             )
 
         (
-            await event_provider_client.cancel_registration(
+            await self.event_provider_client.cancel_registration(
                 registration.event_id, ticket_id
             ),
         )

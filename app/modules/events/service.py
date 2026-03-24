@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.config import settings
-from app.modules.clients.events_face import AsyncEventsProviderClient
+from app.modules.clients.events_face import EventsProviderClient
 from app.modules.events.models import Events
 from app.modules.events.repository import EventsRepository, PlacesRepository
 from app.modules.events.schemas import (
@@ -86,7 +86,7 @@ class EventService:
             raise ValueError("Seats cache is not configured")
         if event_id in self.seats_cache:
             return self.seats_cache[event_id]
-        event_provider_client = AsyncEventsProviderClient()
+        event_provider_client = EventsProviderClient()
         available_seats = sorted(
             await event_provider_client.get_seats(event_id), key=self._seat_key
         )

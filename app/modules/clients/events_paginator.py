@@ -1,20 +1,20 @@
 from datetime import datetime
 
-from app.modules.clients.events_face import AsyncEventsProviderClient
+from app.modules.clients.events_face import EventsProviderClient
 
 
 class EventsPaginator:
-    def __init__(self, client: AsyncEventsProviderClient, date: datetime):
+    def __init__(self, client: EventsProviderClient, date: datetime):
         self.client = client
         self.date = date.strftime("%Y-%m-%d")
 
     async def __aiter__(self):
-        response = await self.client.get_url(
-            f"{self.client.HOST}/api/events/?changed_at={self.date}"
+        response = await self.client.request_url(
+            "GET", f"{self.client.HOST}/api/events/?changed_at={self.date}"
         )
         yield response
         while True:
             if response["next"] is None:
                 break
-            response = await self.client.get_url(response["next"])
+            response = await self.client.request_url("GET", response["next"])
             yield response

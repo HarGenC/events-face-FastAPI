@@ -2,8 +2,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import Registrations
-from .schemas import CreateRegistration
+from app.modules.tickets.models import Registrations
+from app.modules.tickets.schemas import CreateRegistration
 
 
 class TicketRepository:
@@ -13,7 +13,6 @@ class TicketRepository:
     async def create_registration(self, data: CreateRegistration):
         stmt = insert(Registrations).values(**data.model_dump())
         await self.session.execute(stmt)
-        await self.session.commit()
 
     async def get_registration(self, ticket_id: UUID):
         result = await self.session.execute(
