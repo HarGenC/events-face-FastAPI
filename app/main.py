@@ -10,6 +10,7 @@ from loguru import logger
 
 from app.api.endpoints import router
 from app.core import handlers
+from app.workers.outbox_worker import outbox_worker
 from app.workers.sync_worker import sync_worker
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -29,13 +30,13 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
         max_instances=1,
     )
-    # scheduler.add_job(
-    #     outbox_worker,
-    #     trigger=CronTrigger(minute='*/5'),
-    #     id="outbox_worker_job",
-    #     replace_existing=True,
-    #     max_instances=1
-    # )
+    scheduler.add_job(
+        outbox_worker,
+        trigger=CronTrigger(second="*/30"),
+        id="outbox_worker_job",
+        replace_existing=True,
+        max_instances=1,
+    )
     scheduler.start()
 
     yield

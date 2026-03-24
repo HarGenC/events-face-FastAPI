@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import get_seats_cache
 from app.core.database import get_session
 from app.modules.clients.events_face import EventsProviderClient
+from app.modules.clients.notification import NotificationClient
 from app.modules.events.repository import EventsRepository
 from app.modules.events.service import EventService
 from app.modules.notifications.repository import OutboxRepository
@@ -22,8 +23,11 @@ def get_ticket_service(session: AsyncSession = Depends(get_session)):
     event_service = EventService(
         EventsRepository(session), seats_cache=get_seats_cache()
     )
+    noitification_client = NotificationClient()
     event_provider_client = EventsProviderClient()
-    notification_service = NotificationService(repo=outbox_repo)
+    notification_service = NotificationService(
+        repo=outbox_repo, notification_client=noitification_client
+    )
     return TicketService(
         repo=ticket_repo,
         event_service=event_service,

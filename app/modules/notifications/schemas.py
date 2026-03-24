@@ -4,9 +4,12 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class CreateNotification(BaseModel):
-    event_type: str
+class Notification(BaseModel):
     payload: dict
+
+
+class CreateNotification(Notification):
+    event_type: str
     status: str
 
 
