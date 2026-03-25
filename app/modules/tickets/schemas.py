@@ -9,6 +9,7 @@ class RegistrationInfoIn(BaseModel):
     last_name: str
     email: EmailStr
     seat: str
+    idempotency_key: UUID
 
 
 class CreateRegistration(RegistrationInfoIn):

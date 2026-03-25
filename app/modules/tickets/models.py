@@ -15,6 +15,9 @@ class Registrations(Base):
     event_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("events.id")
     )
+    idempotency_key: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     first_name: Mapped[str]
     last_name: Mapped[str]
     email: Mapped[str]
@@ -23,4 +26,5 @@ class Registrations(Base):
     __table_args__ = (
         PrimaryKeyConstraint("event_id", "ticket_id", name="pk_event_ticket"),
         UniqueConstraint("event_id", "seat", name="uix_event_seat"),
+        UniqueConstraint("event_id", "idempotency_key", name="uq_event_idempotency"),
     )

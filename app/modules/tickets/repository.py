@@ -14,9 +14,17 @@ class TicketRepository:
         stmt = insert(Registrations).values(**data.model_dump())
         await self.session.execute(stmt)
 
-    async def get_registration(self, ticket_id: UUID):
+    async def get_registration_by_ticket_id(self, ticket_id: UUID):
         result = await self.session.execute(
             select(Registrations).where(Registrations.ticket_id == ticket_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_registration_by_idempotency_key(self, idempotency_key: UUID):
+        result = await self.session.execute(
+            select(Registrations).where(
+                Registrations.idempotency_key == idempotency_key
+            )
         )
         return result.scalar_one_or_none()
 

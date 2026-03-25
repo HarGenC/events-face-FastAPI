@@ -54,4 +54,5 @@ class EventsProviderClient:
         url = f"{self.HOST}/api/events/{registration_info.event_id}/register/"
         json_data = registration_info.model_dump()
         json_data.pop("event_id", None)
+        json_data.pop("idempotency_key", None)
         return await self.request_url("POST", url, json_data=json_data)

@@ -25,7 +25,6 @@ class NotificationService:
 
         while True:
             notifications = await self.repo.claim_notifications(limit)
-            logger.info(f"notifications: {notifications}")
             if not notifications:
                 break
             tasks = [

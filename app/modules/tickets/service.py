@@ -9,6 +9,7 @@ from app.modules.events.service import EventService
 from app.modules.notifications.enums import NotificationStatus
 from app.modules.notifications.schemas import CreateNotification
 from app.modules.notifications.service import NotificationService
+from app.modules.tickets.models import Registrations
 from app.modules.tickets.repository import TicketRepository
 from app.modules.tickets.schemas import CreateRegistration, RegistrationInfoIn
 
@@ -27,6 +28,18 @@ class TicketService:
         self.event_provider_client = event_provider_client
 
     async def register_for_event(self, registration_info: RegistrationInfoIn):
+        registration = await self.repo.get_registration_by_idempotency_key(
+            registration_info.idempotency_key
+        )
+        if registration:
+            if await self.is_same_registration(registration_info, registration):
+                return registration.ticket_id
+            else:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency key already used with different payload",
+                )
+
         event = await self.event_service.get_event(registration_info.event_id)
         if event.registration_deadline < datetime.now(
             event.registration_deadline.tzinfo
@@ -62,6 +75,7 @@ class TicketService:
                 first_name=registration_info.first_name,
                 last_name=registration_info.last_name,
                 email=registration_info.email,
+                idempotency_key=registration_info.idempotency_key,
             )
         )
         payload = {
@@ -100,7 +114,7 @@ class TicketService:
         return False
 
     async def cancel_registration(self, ticket_id: UUID):
-        registration = await self.repo.get_registration(ticket_id)
+        registration = await self.repo.get_registration_by_ticket_id(ticket_id)
         if registration is None:
             raise HTTPException(status_code=404, detail="Registration not found")
         event = await self.event_service.get_event(registration.event_id)
@@ -115,3 +129,11 @@ class TicketService:
             ),
         )
         await self.repo.delete_registration(registration.event_id, ticket_id)
+
+    async def is_same_registration(
+        self, registration_info: RegistrationInfoIn, current_registration: Registrations
+    ):
+        return not any(
+            getattr(registration_info, field) != getattr(current_registration, field)
+            for field in ("email", "first_name", "last_name", "seat")
+        )
