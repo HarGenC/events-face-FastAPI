@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     HOSTNAME: str
     PORT: int
     X_API_KEY: str
+    SENTRY_DSN: str
 
     @property
     def DATABASE_URL_asyncpg(self):

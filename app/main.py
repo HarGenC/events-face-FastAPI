@@ -2,14 +2,17 @@ import os
 import sys
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from loguru import logger
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
 from app.api.endpoints import router
 from app.core import handlers
+from app.core.config import settings
 from app.workers.outbox_worker import outbox_worker
 from app.workers.sync_worker import sync_worker
 
@@ -47,7 +50,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="events-face", lifespan=lifespan)
-
+sentry_sdk.init(dsn=settings.SENTRY_DSN)
+app.add_middleware(SentryAsgiMiddleware)
 
 app.add_exception_handler(RequestValidationError, handlers.validation_exception_handler)
 app.add_exception_handler(HTTPException, handlers.http_exception_handler)
