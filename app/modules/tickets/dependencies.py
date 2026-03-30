@@ -17,17 +17,42 @@ def get_ticket_repository(session: AsyncSession = Depends(get_session)):
     return TicketRepository(session)
 
 
-def get_ticket_service(session: AsyncSession = Depends(get_session)):
-    ticket_repo = TicketRepository(session)
-    outbox_repo = OutboxRepository(session)
-    event_service = EventService(
-        EventsRepository(session), seats_cache=get_seats_cache()
-    )
-    noitification_client = NotificationClient()
-    event_provider_client = EventsProviderClient()
-    notification_service = NotificationService(
-        repo=outbox_repo, notification_client=noitification_client
-    )
+def get_events_repository(session: AsyncSession = Depends(get_session)):
+    return EventsRepository(session)
+
+
+def get_outbox_repository(session: AsyncSession = Depends(get_session)):
+    return OutboxRepository(session)
+
+
+def get_events_provider_client():
+    return EventsProviderClient()
+
+
+def get_notification_client():
+    return NotificationClient()
+
+
+def get_event_service(
+    repo: EventsRepository = Depends(get_events_repository),
+    client: EventsProviderClient = Depends(get_events_provider_client),
+):
+    return EventService(repo, client, seats_cache=get_seats_cache())
+
+
+def get_notification_service(
+    repo: OutboxRepository = Depends(get_outbox_repository),
+    client: NotificationClient = Depends(get_notification_client),
+):
+    return NotificationService(repo=repo, notification_client=client)
+
+
+def get_ticket_service(
+    ticket_repo: TicketRepository = Depends(get_ticket_repository),
+    event_service: EventService = Depends(get_event_service),
+    event_provider_client: EventsProviderClient = Depends(get_events_provider_client),
+    notification_service: NotificationService = Depends(get_notification_service),
+):
     return TicketService(
         repo=ticket_repo,
         event_service=event_service,

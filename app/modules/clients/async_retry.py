@@ -40,7 +40,7 @@ class AsyncRetry:
                         f"HTTP error {exc.response.status_code}: {exc.response.text}"
                     )
                     raise ValueError(
-                        f"External service returned error: {error_msg}"
+                        "External service returned error: %s", error_msg
                     ) from exc
                 last_error = exc
 
@@ -48,5 +48,5 @@ class AsyncRetry:
             await asyncio.sleep(delay)
 
         raise ValueError(
-            f"Operation failed after {self.max_retries} attempts"
+            "Operation failed after %s attempts", self.max_retries
         ) from last_error

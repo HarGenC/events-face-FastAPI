@@ -22,7 +22,7 @@ class SyncService:
         place_service: PlaceService,
     ):
         self.repo = SyncRepository(session)
-        self.full_sync = datetime.fromisoformat("2000-01-01")
+        self.full_sync = datetime(2000, 1, 1, tzinfo=timezone.utc)
         self.event_service = event_service
         self.place_service = place_service
 
@@ -37,7 +37,11 @@ class SyncService:
         else:
             sync_time = self.full_sync
 
-        max_time = sync_time.today()
+        if sync_time.tzinfo is None:
+            sync_time = sync_time.replace(tzinfo=timezone.utc)
+
+        max_time = sync_time
+
         await self.repo.create(
             CreateSyncLog(
                 id=id,
@@ -47,8 +51,10 @@ class SyncService:
             )
         )
 
+        date_str = sync_time.date()
+
         try:
-            async for events in EventsPaginator(EventsProviderClient(), sync_time):
+            async for events in EventsPaginator(EventsProviderClient(), date_str):
                 async with AsyncSessionLocal() as session:
                     self.repo.session = session
                     for event in events["results"]:
@@ -57,7 +63,11 @@ class SyncService:
                             CreatePlace(**(event["place"]))
                         )
                         await self.event_service.create_event(CreateEvent(**event))
-                        changed_at = datetime.fromisoformat(event["changed_at"]).today()
+
+                        changed_at = datetime.fromisoformat(event["changed_at"])
+                        if changed_at.tzinfo is None:
+                            changed_at = changed_at.replace(tzinfo=timezone.utc)
+
                         if max_time < changed_at:
                             max_time = changed_at
         except Exception as e:

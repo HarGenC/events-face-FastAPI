@@ -18,9 +18,15 @@ from app.modules.events.schemas import (
 
 
 class EventService:
-    def __init__(self, repo: EventsRepository, seats_cache: TTLCache | None = None):
+    def __init__(
+        self,
+        repo: EventsRepository,
+        event_provider_client: EventsProviderClient,
+        seats_cache: TTLCache | None = None,
+    ):
         self.seats_cache = seats_cache
         self.repo = repo
+        self.event_provider_client = event_provider_client
         self.DEFAULT_PAGE = 1
         self.DEFAULT_PAGE_SIZE = 20
 
@@ -28,7 +34,7 @@ class EventService:
         event = await self.repo.get_by_id(event_id)
 
         if event is None:
-            raise HTTPException(status_code=404, detail="Event not found")
+            raise HTTPException(status_code=404, detail="Event not found")  # Исправить
         return event
 
     async def create_event(self, data: CreateEvent):
@@ -86,9 +92,8 @@ class EventService:
             raise ValueError("Seats cache is not configured")
         if event_id in self.seats_cache:
             return self.seats_cache[event_id]
-        event_provider_client = EventsProviderClient()
         available_seats = sorted(
-            await event_provider_client.get_seats(event_id), key=self._seat_key
+            await self.event_provider_client.get_seats(event_id), key=self._seat_key
         )
         self.seats_cache[event_id] = available_seats
         return available_seats
@@ -97,10 +102,11 @@ class EventService:
         if event is None:
             event = await self.get_event(event_id)
         if event.status != "published":
-            raise HTTPException(status_code=400, detail="Event is not published")
+            raise HTTPException(
+                status_code=400, detail="Event is not published"
+            )  # Исправить
 
     def _seat_key(self, seat: str):
-        # Берём буквы в начале и число после них
         match = re.match(r"([A-Z]+)(\d+)", seat)
         if match:
             letter, number = match.groups()

@@ -31,14 +31,14 @@ class EventsProviderClient:
         try:
             return await self.async_retry.execute(request)
         except httpx.ReadTimeout:
-            logger.error(f"Timeout while requesting {url}")
+            logger.error("Timeout while requesting %s", url)
             raise
         except httpx.HTTPError as e:
-            logger.error(f"HTTP error while requesting {method} {url}: {e}")
+            logger.error("HTTP error while requesting %s %s: %s", method, url, e)
             raise
 
         except Exception as e:
-            logger.error(f"Unexpected error while requesting {method} {url}: {e}")
+            logger.error("Unexpected error while requesting %s %s: %s", method, url, e)
             raise
 
     async def get_seats(self, event_id: UUID):

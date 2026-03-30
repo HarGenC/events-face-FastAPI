@@ -1,7 +1,6 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException
 from loguru import logger
 
 from app.modules.clients.events_face import EventsProviderClient
@@ -35,36 +34,36 @@ class TicketService:
             if await self.is_same_registration(registration_info, registration):
                 return registration.ticket_id
             else:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Idempotency key already used with different payload",
-                )
+                return {
+                    "status_code": 409,
+                    "detail": "Idempotency key already used with different payload",
+                }
 
         event = await self.event_service.get_event(registration_info.event_id)
         if event.registration_deadline < datetime.now(
             event.registration_deadline.tzinfo
         ):
-            raise HTTPException(
-                status_code=400, detail="Registration deadline has passed"
-            )
+            return {"status_code": 400, "detail": "Registration deadline has passed"}
 
         await self.event_service.check_event_status(registration_info.event_id, event)
 
         if not await self._seat_exists(
             registration_info.seat, event.place.seats_pattern
         ):
-            raise HTTPException(status_code=400, detail="Seat does not exist")
+            return {"status_code": 400, "detail": "Seat does not exist"}
 
         available_seats = await self.event_service.get_available_seats(
             registration_info.event_id
         )
         if registration_info.seat not in available_seats:
-            raise HTTPException(status_code=400, detail="Seat is not available")
+            return {"status_code": 400, "detail": "Seat is not available"}
 
         result = await self.event_provider_client.register(registration_info)
         ticket_id = result["ticket_id"]
         logger.info(
-            f"Registered for event {registration_info.event_id} with ticket {ticket_id}"
+            "Registered for event %s with ticket %s",
+            registration_info.event_id,
+            ticket_id,
         )
 
         await self.repo.create_registration(
@@ -116,12 +115,13 @@ class TicketService:
     async def cancel_registration(self, ticket_id: UUID):
         registration = await self.repo.get_registration_by_ticket_id(ticket_id)
         if registration is None:
-            raise HTTPException(status_code=404, detail="Registration not found")
+            return {"status_code": 404, "detail": "Registration not found"}
         event = await self.event_service.get_event(registration.event_id)
         if event.event_time < datetime.now(event.event_time.tzinfo):
-            raise HTTPException(
-                status_code=400, detail="The cancellation deadline has expired"
-            )
+            return {
+                "status_code": 400,
+                "detail": "The cancellation deadline has expired",
+            }
 
         (
             await self.event_provider_client.cancel_registration(

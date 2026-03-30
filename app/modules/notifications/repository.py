@@ -1,4 +1,3 @@
-from loguru import logger
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +35,6 @@ class OutboxRepository:
             select(Outbox).where(Outbox.id == data.id).with_for_update()
         )
         outbox_item = result.scalar_one_or_none()
-        logger.info(outbox_item)
 
         if outbox_item is None:
             raise ValueError("Notification not found")

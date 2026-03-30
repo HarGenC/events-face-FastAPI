@@ -53,11 +53,13 @@ class NotificationService:
             await repo.update(notification)
             if notification.status == NotificationStatus.SENT:
                 logger.info(
-                    f"Notification sent successfully, idempotency_key={notification.payload['idempotency_key']}"
+                    "Notification sent successfully, idempotency_key=%s",
+                    notification.payload["idempotency_key"],
                 )
             else:
                 logger.info(
-                    f"Notification failed, idempotency_key={notification.payload['idempotency_key']}"
+                    "Notification failed, idempotency_key=%s",
+                    notification.payload["idempotency_key"],
                 )
 
     async def _mark_for_retry(self, notification: UpdateNotification):
