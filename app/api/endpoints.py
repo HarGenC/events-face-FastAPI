@@ -14,3 +14,8 @@ router.include_router(tickets_router)
 @router.get("/health", tags=["Health"])
 async def health_check():
     return {"status": "ok"}
+
+
+@router.get("/metrics", tags=["Metrics"])
+async def metrics():
+    return
