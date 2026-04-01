@@ -39,13 +39,28 @@ class TicketService:
                     "detail": "Idempotency key already used with different payload",
                 }
 
-        event = await self.event_service.get_event(registration_info.event_id)
+        result = await self.event_service.get_event(registration_info.event_id)
+        if isinstance(result, dict) and "status_code" in result and "detail" in result:
+            return {
+                "status_code": result.get("status_code"),
+                "detail": result.get("detail"),
+            }
+
+        event = result
         if event.registration_deadline < datetime.now(
             event.registration_deadline.tzinfo
         ):
             return {"status_code": 400, "detail": "Registration deadline has passed"}
 
-        await self.event_service.check_event_status(registration_info.event_id, event)
+        result = await self.event_service.check_event_status(
+            registration_info.event_id, event
+        )
+
+        if isinstance(result, dict) and "status_code" in result and "detail" in result:
+            return {
+                "status_code": result.get("status_code"),
+                "detail": result.get("detail"),
+            }
 
         if not await self._seat_exists(
             registration_info.seat, event.place.seats_pattern
@@ -61,7 +76,7 @@ class TicketService:
         result = await self.event_provider_client.register(registration_info)
         ticket_id = result["ticket_id"]
         logger.info(
-            "Registered for event %s with ticket %s",
+            "Registered for event {} with ticket {}",
             registration_info.event_id,
             ticket_id,
         )
@@ -116,7 +131,16 @@ class TicketService:
         registration = await self.repo.get_registration_by_ticket_id(ticket_id)
         if registration is None:
             return {"status_code": 404, "detail": "Registration not found"}
-        event = await self.event_service.get_event(registration.event_id)
+
+        result = await self.event_service.get_event(registration.event_id)
+        if isinstance(result, dict) and "status_code" in result and "detail" in result:
+            return {
+                "status_code": result.get("status_code"),
+                "detail": result.get("detail"),
+            }
+
+        event = result
+
         if event.event_time < datetime.now(event.event_time.tzinfo):
             return {
                 "status_code": 400,

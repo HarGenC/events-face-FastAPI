@@ -64,7 +64,7 @@ class EventsRepository:
         event = result.scalar_one_or_none()
 
         if event is None:
-            raise ValueError("Failed to create or retrieve event with id %s", data.id)
+            raise ValueError(f"Failed to create or retrieve event with id {data.id}")
 
         return event
 
@@ -106,7 +106,7 @@ class PlacesRepository:
         place = result.scalar_one_or_none()
 
         if place is None:
-            raise ValueError("Failed to create or retrieve place with id %s", data.id)
+            raise ValueError(f"Failed to create or retrieve place with id {data.id}")
 
         return place
 

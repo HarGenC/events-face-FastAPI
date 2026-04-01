@@ -53,12 +53,12 @@ class NotificationService:
             await repo.update(notification)
             if notification.status == NotificationStatus.SENT:
                 logger.info(
-                    "Notification sent successfully, idempotency_key=%s",
+                    "Notification sent successfully, idempotency_key={}",
                     notification.payload["idempotency_key"],
                 )
             else:
                 logger.info(
-                    "Notification failed, idempotency_key=%s",
+                    "Notification failed, idempotency_key={}",
                     notification.payload["idempotency_key"],
                 )
 

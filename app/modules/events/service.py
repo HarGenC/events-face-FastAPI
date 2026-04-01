@@ -3,7 +3,6 @@ from datetime import datetime
 from urllib.parse import urlencode
 
 from cachetools import TTLCache
-from fastapi import HTTPException
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.config import settings
@@ -15,6 +14,7 @@ from app.modules.events.schemas import (
     CreatePlace,
     PageWithEventsOut,
 )
+from app.observability.metrics import cache_hits_total, cache_misses_total
 
 
 class EventService:
@@ -34,7 +34,10 @@ class EventService:
         event = await self.repo.get_by_id(event_id)
 
         if event is None:
-            raise HTTPException(status_code=404, detail="Event not found")  # Исправить
+            return {
+                "status_code": 404,
+                "detail": "Event not found",
+            }
         return event
 
     async def create_event(self, data: CreateEvent):
@@ -91,20 +94,37 @@ class EventService:
         if self.seats_cache is None:
             raise ValueError("Seats cache is not configured")
         if event_id in self.seats_cache:
+            cache_hits_total.inc()
             return self.seats_cache[event_id]
+
         available_seats = sorted(
             await self.event_provider_client.get_seats(event_id), key=self._seat_key
         )
         self.seats_cache[event_id] = available_seats
+        cache_misses_total.inc()
+
         return available_seats
 
     async def check_event_status(self, event_id: UUID, event: Events | None = None):
         if event is None:
-            event = await self.get_event(event_id)
+            result = await self.get_event(event_id)
+            if (
+                isinstance(result, dict)
+                and "status_code" in result
+                and "detail" in result
+            ):
+                return {
+                    "status_code": result.get("status_code"),
+                    "detail": result.get("detail"),
+                }
+
+            event = result
+
         if event.status != "published":
-            raise HTTPException(
-                status_code=400, detail="Event is not published"
-            )  # Исправить
+            return {
+                "status_code": 400,
+                "detail": "Event is not published",
+            }
 
     def _seat_key(self, seat: str):
         match = re.match(r"([A-Z]+)(\d+)", seat)

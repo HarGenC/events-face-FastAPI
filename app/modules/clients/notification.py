@@ -26,7 +26,7 @@ class NotificationClient:
         try:
             return await self.async_retry.execute(request)
         except httpx.ReadTimeout:
-            logger.error("Timeout while requesting %s", url)
+            logger.error("Timeout while requesting {}", url)
             raise
         except httpx.HTTPError as e:
             logger.error("HTTP error while requesting %s %s: %s", method, url, e)

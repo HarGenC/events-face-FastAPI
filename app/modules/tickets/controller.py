@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.modules.tickets.dependencies import get_ticket_service
 from app.modules.tickets.schemas import RegistrationInfoIn
 from app.modules.tickets.service import TicketService
+from app.observability.metrics import tickets_cancelled_total, tickets_created_total
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -21,6 +22,7 @@ async def register_for_event(
             status_code=result.get("status_code"), detail=result.get("detail")
         )
 
+    tickets_created_total.inc()
     return {"ticket_id": result}
 
 
@@ -31,6 +33,7 @@ async def unregister_ticket(
 ):
     result = await ticket_service.cancel_registration(ticket_id)
     if result is None:
+        tickets_cancelled_total.inc()
         return {"success": True}
     raise HTTPException(
         status_code=result.get("status_code"), detail=result.get("detail")
