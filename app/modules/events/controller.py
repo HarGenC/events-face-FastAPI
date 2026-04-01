@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.modules.events.dependencies import get_event_service
 from app.modules.events.schemas import EventOut, SeatsOut
@@ -30,6 +30,10 @@ async def get_event_detail(
 ):
     result = await event_service.get_event(event_id)
 
+    if isinstance(result, dict) and "status_code" in result and "detail" in result:
+        raise HTTPException(
+            status_code=result.get("status_code"), detail=result.get("detail")
+        )
     return result
 
 
@@ -37,7 +41,12 @@ async def get_event_detail(
 async def get_seats(
     event_id: UUID, event_service: EventService = Depends(get_event_service)
 ):
-    await event_service.check_event_status(event_id)
+    result = await event_service.check_event_status(event_id)
+    if isinstance(result, dict) and "status_code" in result and "detail" in result:
+        raise HTTPException(
+            status_code=result.get("status_code"), detail=result.get("detail")
+        )
+
     result = await event_service.get_available_seats(event_id)
 
     return SeatsOut(event_id=event_id, available_seats=result)

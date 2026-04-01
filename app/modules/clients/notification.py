@@ -29,11 +29,11 @@ class NotificationClient:
             logger.error("Timeout while requesting {}", url)
             raise
         except httpx.HTTPError as e:
-            logger.error("HTTP error while requesting %s %s: %s", method, url, e)
+            logger.error("HTTP error while requesting {} {}: {}", method, url, e)
             raise
 
         except Exception as e:
-            logger.error("Unexpected error while requesting %s %s: %s", method, url, e)
+            logger.error("Unexpected error while requesting {} {}: {}", method, url, e)
             raise
 
     async def send_notification(self, notification_data: dict):
